@@ -26,7 +26,51 @@
          change VERSION for 4.07.0+beta2
 *)
 
-module Location = Location
+module Location = struct
+  include (
+    Location : module type of struct include Location end
+    with type error := Location.error
+  )
+
+  type error (* IF_CURRENT = Location.error *) = {
+    loc : t;
+    msg : string;
+    sub : error list;
+    if_highlight : string;
+  }
+
+  let error_prefix = "Error"
+
+  let errorf ?(loc = none) ?(sub = []) ?(if_highlight = "") fmt =
+    let pp_ksprintf ?before k fmt =
+      let buf = Buffer.create 64 in
+      let ppf = Format.formatter_of_buffer buf in
+      (* Misc.Color.set_color_tag_handling ppf; *)
+      begin match before with
+      | None -> ()
+      | Some f -> f ppf
+      end;
+      Format.kfprintf
+        (fun _ ->
+           Format.pp_print_flush ppf ();
+           let msg = Buffer.contents buf in
+           k msg)
+        ppf fmt
+    in
+    (* Shift the formatter's offset by the length of the error prefix, which
+       is always added by the compiler after the message has been formatted *)
+    let print_phanton_error_prefix ppf =
+      Format.pp_print_as ppf (String.length error_prefix + 2 (* ": " *)) ""
+    in
+    pp_ksprintf
+      ~before:print_phanton_error_prefix
+      (fun msg -> {loc; msg; sub; if_highlight})
+      fmt
+
+  let error ?(loc = none) ?(sub = []) ?(if_highlight = "") msg =
+    {loc; msg; sub; if_highlight}
+end
+
 module Longident = Longident
 
 module Asttypes = struct

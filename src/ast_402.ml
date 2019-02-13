@@ -17,7 +17,26 @@
 (*                                                                        *)
 (**************************************************************************)
 
-module Location = Location
+module Location = struct
+  include (
+    Location : module type of struct include Location end
+    with type error := Location.error
+  )
+
+  type error (* IF_CURRENT = Location.error *) = {
+    loc : t;
+    msg : string;
+    sub : error list;
+    if_highlight : string;
+  }
+
+  let errorf ?(loc = none) ?(sub = []) ?(if_highlight = "") =
+    Printf.ksprintf (fun msg -> {loc; msg; sub; if_highlight})
+
+  let error ?(loc = none) ?(sub = []) ?(if_highlight = "") msg =
+    {loc; msg; sub; if_highlight}
+end
+
 module Longident = Longident
 
 module Asttypes = struct

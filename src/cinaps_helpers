@@ -41,6 +41,10 @@ let qualified_types = [
   "Ast_mapper",
   [ "mapper"
   ];
+
+  "Location",
+  [ "error"
+  ];
 ]
 
 let all_types = List.concat (List.map ~f:snd qualified_types)

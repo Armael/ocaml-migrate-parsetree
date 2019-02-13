@@ -17,7 +17,43 @@
 (*                                                                        *)
 (**************************************************************************)
 
-module Location = Location
+module Location = struct
+  include (
+    Location : module type of struct include Location end
+    with type error := Location.error
+  )
+
+  type error (* IF_CURRENT = Location.error *) = {
+    loc : t;
+    msg : string;
+    sub : error list;
+    if_highlight : string;
+  }
+
+  let errorf ?(loc = none) ?(sub = []) ?(if_highlight = "") fmt =
+    let pp_ksprintf ?before k fmt =
+      let buf = Buffer.create 64 in
+      let ppf = Format.formatter_of_buffer buf in
+      (* Misc.Color.set_color_tag_handling ppf; *)
+      begin match before with
+      | None -> ()
+      | Some f -> f ppf
+      end;
+      Format.kfprintf
+        (fun _ ->
+           Format.pp_print_flush ppf ();
+           let msg = Buffer.contents buf in
+           k msg)
+        ppf fmt
+    in
+    pp_ksprintf
+      (fun msg -> {loc; msg; sub; if_highlight})
+      fmt
+
+  let error ?(loc = none) ?(sub = []) ?(if_highlight = "") msg =
+    {loc; msg; sub; if_highlight}
+end
+
 module Longident = Longident
 
 module Asttypes = struct
