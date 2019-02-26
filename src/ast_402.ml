@@ -35,6 +35,13 @@ module Location = struct
 
   let error ?(loc = none) ?(sub = []) ?(if_highlight = "") msg =
     {loc; msg; sub; if_highlight}
+
+  (* TODO: how to PROPERLY export the equality with Location.Error using
+     IF_CURRENT? *)
+  exception Error (* IF_CURRENT = Error exception Dummy *) of error
+
+  let raise_errorf ?(loc = none) ?(sub = []) ?(if_highlight = "") =
+    Printf.ksprintf (fun msg -> raise (Error ({loc; msg; sub; if_highlight})))
 end
 
 module Longident = Longident
