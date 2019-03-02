@@ -26,18 +26,88 @@
          fixed position of last optional last semicolumn in sequence (#1387)
 *)
 
-module Location = struct
-  include (
-    Location : module type of struct include Location end
-    with type error := Location.error
-  )
-
-  type error (* IF_CURRENT = Location.error *) = {
-    loc : t;
-    msg : string;
-    sub : error list;
-    if_highlight : string;
+module Location : sig
+  type t = Location.t = {
+    loc_start: Lexing.position;
+    loc_end: Lexing.position;
+    loc_ghost: bool;
   }
+
+  val none : t
+  (** An arbitrary value of type [t]; describes an empty ghost range. *)
+  val in_file : string -> t;;
+  (** Return an empty ghost range located in a given file. *)
+
+  val get_pos_info: Lexing.position -> string * int * int (* file, line, char *)
+
+  type 'a loc = 'a Location.loc = {
+    txt : 'a;
+    loc : t;
+  }
+
+  val mknoloc : 'a -> 'a loc
+  val mkloc : 'a -> t -> 'a loc
+
+  (* Support for located errors *)
+
+  type error (* IF_CURRENT = Location.error *) =
+    {
+      loc: t;
+      msg: string;
+      sub: error list;
+      if_highlight: string; (* alternative message if locations are highlighted *)
+    }
+
+  exception Error of error
+
+  val error: ?loc:t -> ?sub:error list -> ?if_highlight:string -> string -> error
+
+  val errorf: ?loc:t -> ?sub:error list -> ?if_highlight:string
+    -> ('a, Format.formatter, unit, error) format4 -> 'a
+
+  val raise_errorf: ?loc:t -> ?sub:error list -> ?if_highlight:string
+    -> ('a, Format.formatter, unit, 'b) format4 -> 'a
+
+end = struct
+
+  type t = Location.t = {
+    loc_start: Lexing.position;
+    loc_end: Lexing.position;
+    loc_ghost: bool;
+  }
+
+  let in_file name =
+    let open Lexing in
+    let loc = {
+      pos_fname = name;
+      pos_lnum = 1;
+      pos_bol = 0;
+      pos_cnum = -1;
+    } in
+    { loc_start = loc; loc_end = loc; loc_ghost = true }
+
+  let none = in_file "_none_"
+
+  (* return file, line, char from the given position *)
+  let get_pos_info pos =
+    let open Lexing in
+    (pos.pos_fname, pos.pos_lnum, pos.pos_cnum - pos.pos_bol)
+
+  type 'a loc = 'a Location.loc = {
+    txt : 'a;
+    loc : t;
+  }
+
+  let mkloc txt loc = { txt ; loc }
+  let mknoloc txt = mkloc txt none
+
+  type error (* IF_CURRENT = Location.error *) =
+    {
+      loc: t;
+      msg: string;
+      sub: error list;
+      if_highlight: string; (* alternative message if locations are highlighted *)
+    }
 
   let error_prefix = "Error"
 
@@ -70,8 +140,7 @@ module Location = struct
   let error ?(loc = none) ?(sub = []) ?(if_highlight = "") msg =
     {loc; msg; sub; if_highlight}
 
-  (* TODO: XXX *)
-  exception Error (* IF_CURRENT = Error exception Dummy *) of error
+  exception Error of error
 
   let raise_errorf ?(loc = none) ?(sub = []) ?(if_highlight = "") =
     pp_ksprintf
