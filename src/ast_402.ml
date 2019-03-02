@@ -29,6 +29,8 @@ module Location : sig
   val in_file : string -> t;;
   (** Return an empty ghost range located in a given file. *)
 
+  val input_name: string ref
+
   val get_pos_info: Lexing.position -> string * int * int (* file, line, char *)
 
   type 'a loc = 'a Location.loc = {
@@ -77,6 +79,8 @@ end = struct
     { loc_start = loc; loc_end = loc; loc_ghost = true }
 
   let none = in_file "_none_"
+
+  let input_name = Location.input_name
 
   (* return file, line, char from the given position *)
   let get_pos_info pos =
