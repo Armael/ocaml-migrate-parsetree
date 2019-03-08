@@ -36,6 +36,8 @@ module Location : sig
   val get_pos_info: Lexing.position -> string * int * int (* file, line, char *)
   val absolute_path: string -> string
   val show_filename : string -> string
+  val print: Format.formatter -> t -> unit
+  val print_loc: Format.formatter -> t -> unit
 
   type 'a loc = 'a Location.loc = {
     txt : 'a;
@@ -114,6 +116,27 @@ end = struct
   let show_filename file =
     (* Assumes !absname = false (its default value) *)
     file
+
+  let print_filename ppf file =
+    Format.fprintf ppf "%s" (show_filename file)
+
+  let (msg_file, msg_line, msg_chars, msg_to, msg_colon) =
+    ("File \"", "\", line ", ", characters ", "-", ":")
+
+  let print_loc ppf loc =
+    let (file, line, startchar) = get_pos_info loc.loc_start in
+    let endchar = loc.loc_end.pos_cnum - loc.loc_start.pos_cnum + startchar in
+    if file = "//toplevel//" then begin
+      Format.fprintf ppf "Characters %i-%i"
+        loc.loc_start.pos_cnum loc.loc_end.pos_cnum
+    end else begin
+      Format.fprintf ppf "%s%a%s%i" msg_file print_filename file msg_line line;
+      if startchar >= 0 then
+        Format.fprintf ppf "%s%i%s%i" msg_chars startchar msg_to endchar
+    end
+
+  let print ppf loc =
+    Format.fprintf ppf "%a%s@." print_loc loc msg_colon
 
   type 'a loc = 'a Location.loc = {
     txt : 'a;
