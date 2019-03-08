@@ -38,6 +38,7 @@ module Location : sig
   val show_filename : string -> string
   val print : Format.formatter -> t -> unit
   val print_loc : Format.formatter -> t -> unit
+  val print_error : Format.formatter -> t -> unit
 
   type 'a loc = 'a Location.loc = {
     txt : 'a;
@@ -139,6 +140,16 @@ end = struct
 
   let print ppf loc =
     Format.fprintf ppf "@{<loc>%a@}%s@." print_loc loc msg_colon
+
+  let error_prefix = "Error"
+  let warning_prefix = "Warning"
+
+  let print_error_prefix ppf () =
+    Format.fprintf ppf "@{<error>%s@}:" error_prefix
+
+  let print_error ppf loc =
+    print ppf loc;
+    print_error_prefix ppf ()
 
   type 'a loc = 'a Location.loc = {
     txt : 'a;
