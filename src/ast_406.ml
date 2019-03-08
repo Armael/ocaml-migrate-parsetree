@@ -41,6 +41,7 @@ module Location : sig
   val input_name: string ref
 
   val get_pos_info: Lexing.position -> string * int * int (* file, line, char *)
+  val show_filename : string -> string
 
   type 'a loc = 'a Location.loc = {
     txt : 'a;
@@ -96,6 +97,10 @@ end = struct
   let get_pos_info pos =
     let open Lexing in
     (pos.pos_fname, pos.pos_lnum, pos.pos_cnum - pos.pos_bol)
+
+  let show_filename file =
+    (* Assumes !absname = false (its default value) *)
+    file
 
   type 'a loc = 'a Location.loc = {
     txt : 'a;
