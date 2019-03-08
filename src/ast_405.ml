@@ -26,6 +26,8 @@ module Location : sig
 
   val none : t
   (** An arbitrary value of type [t]; describes an empty ghost range. *)
+  val curr : Lexing.lexbuf -> t
+  (** Get the location of the current token from the [lexbuf]. *)
   val in_file : string -> t;;
   (** Return an empty ghost range located in a given file. *)
 
@@ -81,6 +83,12 @@ end = struct
     { loc_start = loc; loc_end = loc; loc_ghost = true }
 
   let none = in_file "_none_"
+
+  let curr lexbuf = {
+    loc_start = lexbuf.Lexing.lex_start_p;
+    loc_end = lexbuf.Lexing.lex_curr_p;
+    loc_ghost = false
+  }
 
   let input_name = Location.input_name
 
