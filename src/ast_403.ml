@@ -34,6 +34,7 @@ module Location : sig
   val input_name: string ref
 
   val get_pos_info: Lexing.position -> string * int * int (* file, line, char *)
+  val absolute_path : string -> string
   val show_filename : string -> string
 
   type 'a loc = 'a Location.loc = {
@@ -96,6 +97,20 @@ end = struct
   let get_pos_info pos =
     let open Lexing in
     (pos.pos_fname, pos.pos_lnum, pos.pos_cnum - pos.pos_bol)
+
+  let absolute_path s = (* This function could go into Filename *)
+    let open Filename in
+    let s = if is_relative s then concat (Sys.getcwd ()) s else s in
+    (* Now simplify . and .. components *)
+    let rec aux s =
+      let base = basename s in
+      let dir = dirname s in
+      if dir = s then dir
+      else if base = current_dir_name then aux dir
+      else if base = parent_dir_name then dirname (aux dir)
+      else concat (aux dir) base
+    in
+    aux s
 
   let show_filename file =
     (* Assumes !absname = false (its default value) *)
