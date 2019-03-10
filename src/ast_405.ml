@@ -68,6 +68,12 @@ module Location : sig
   val raise_errorf: ?loc:t -> ?sub:error list -> ?if_highlight:string
     -> ('a, Format.formatter, unit, 'b) format4 -> 'a
 
+  val report_error: Format.formatter -> error -> unit
+
+  val error_of_printer: t -> (Format.formatter -> 'a -> unit) -> 'a -> error
+
+  val error_of_printer_file: (Format.formatter -> 'a -> unit) -> 'a -> error
+
 end = struct
 
   type t = Location.t = {
@@ -204,6 +210,17 @@ end = struct
     pp_ksprintf
       ~before:print_phanton_error_prefix
       (fun msg -> raise (Error ({loc; msg; sub; if_highlight})))
+
+  let rec report_error ppf {loc; msg; sub; _} =
+    Format.fprintf ppf "%a%a %s" print loc print_error_prefix () msg;
+    List.iter (Format.fprintf ppf "@\n@[<2>%a@]" report_error) sub
+
+  let error_of_printer loc print x =
+    errorf ~loc "%a@?" print x
+
+  let error_of_printer_file print x =
+    error_of_printer (in_file !input_name) print x
+
 end
 
 module Longident = Longident
