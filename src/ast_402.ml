@@ -28,6 +28,9 @@ module Location : sig
   (** An arbitrary value of type [t]; describes an empty ghost range. *)
   val in_file : string -> t;;
   (** Return an empty ghost range located in a given file. *)
+  val init : Lexing.lexbuf -> string -> unit
+  (** Set the file name and line number of the [lexbuf] to be the start
+      of the named file. *)
   val curr : Lexing.lexbuf -> t
   (** Get the location of the current token from the [lexbuf]. *)
 
@@ -98,6 +101,14 @@ end = struct
     loc_end = lexbuf.Lexing.lex_curr_p;
     loc_ghost = false
   }
+
+  let init lexbuf fname =
+    lexbuf.Lexing.lex_curr_p <- {
+      pos_fname = fname;
+      pos_lnum = 1;
+      pos_bol = 0;
+      pos_cnum = 0;
+    }
 
   let input_name = Location.input_name
 
